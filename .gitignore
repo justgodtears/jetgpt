@@ -1,0 +1,47 @@
+# Data
+data/raw/
+data/processed/
+data/tokenized/
+*.jsonl
+*.parquet
+
+# Model checkpoints
+checkpoints/
+*.pt
+*.pth
+*.safetensors
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments (uv)
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/*.ipynb_checkpoints/
+
+# Experiment tracking
+wandb/
+runs/
+lightning_logs/
+tensorboard_logs/
+
+# Environment / secrets
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
