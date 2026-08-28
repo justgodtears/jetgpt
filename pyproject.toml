@@ -3,5 +3,7 @@ name = "project-blue"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
+    "ipykernel>=7.3.0",
+    "pandas>=3.0.5",
     "websockets>=17.0.1",
 ]
