@@ -1,6 +1,9 @@
 import pandas as pd
+import json
 import re
+import hashlib
 from lingua import Language, LanguageDetectorBuilder
+from pathlib import Path
 
 detector = LanguageDetectorBuilder.from_all_languages().build()
 
@@ -31,5 +34,55 @@ def normalize_text(text: str) -> str:
 
     return text
 
+def compute_hash(text: str) -> str:
+    """"""
+    return hashlib.md5(text.encode("utf-8")).hexdigest()
+
+def passes_length_filter(text: str, min_words: int = 3) -> bool:
+    """"""
+    text = text.split()
+    if len(text) < min_words:
+        return False
+    else:
+        return True
+
+def process_posts(raw_data_dir: Path, output_path: Path, detector_object, min_words: int = 3) -> bool:
+    seen_hashes = set()
+    processed_posts = []
+
+    for file in raw_data_dir.iterdir():
+        with open(file) as f:
+            for row in f:
+                data = json.loads(row)
+                text = data["record"]["text"]
+                langs_tag = data["record"]["langs"] if "langs" in data["record"] else None
+
+                if langs_tag is not None:
+                    verified = verify_language(text, langs_tag, detector_object)
+
+                    if verified:
+                        normalized_text = normalize_text(text)
+                        computed_hash = compute_hash(normalized_text)
+
+                        if computed_hash in seen_hashes:
+                            continue
+                        else:
+                            seen_hashes.add(computed_hash)
+
+                        is_passed = passes_length_filter(normalized_text, min_words)
+
+                        if is_passed:
+                            processed_posts.append({"text": normalized_text, "langs": langs_tag})
+                else:
+                    continue
+
+    df = pd.DataFrame(processed_posts)
+    df.to_parquet(output_path)
+
+    return True
+
+
 if __name__ == "__main__":
-    print(normalize_text("Check this out @john_doe https://example.com #MachineLearning is cool"))
+    print(compute_hash("hello world"))
+    print(compute_hash("hello world"))  # powinno dać ten sam hash co powyżej
+    print(compute_hash("Hello World"))  # inny hash (wielkość liter ma znaczenie w hashu, ale pamiętaj - normalizację robisz PRZED hashowaniem)
