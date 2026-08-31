@@ -4,6 +4,7 @@ data/raw/
 data/processed/
 data/tokenized/
 data/archive/
+post_ln.txt
 *.jsonl
 *.parquet
 
