@@ -2,6 +2,7 @@ import pandas as pd
 import json
 import re
 import hashlib
+import tqdm
 from lingua import Language, LanguageDetectorBuilder
 from pathlib import Path
 
@@ -47,42 +48,46 @@ def passes_length_filter(text: str, min_words: int = 3) -> bool:
         return True
 
 def process_posts(raw_data_dir: Path, output_path: Path, detector_object, min_words: int = 3) -> bool:
+    ### Counting all lines in all files to properly set tqdm bar
+    ### to see live progress of processing
+    total_lines = 0
+    for file in raw_data_dir.iterdir():
+        with open(file) as f:
+            total_lines += sum(1 for _ in f)
+
+    ### Main part of function
     seen_hashes = set()
     processed_posts = []
 
-    for file in raw_data_dir.iterdir():
-        with open(file) as f:
-            for row in f:
-                data = json.loads(row)
-                text = data["record"]["text"]
-                langs_tag = data["record"]["langs"] if "langs" in data["record"] else None
+    with tqdm.tqdm(total=total_lines, desc="Processing posts") as pbar:
+        for file in raw_data_dir.iterdir():
+            with open(file) as f:
+                for row in f:
+                    data = json.loads(row)
+                    pbar.update(1)
+                    text = data["record"]["text"]
+                    langs_tag = data["record"]["langs"] if "langs" in data["record"] else None
 
-                if langs_tag is not None:
-                    verified = verify_language(text, langs_tag, detector_object)
+                    if langs_tag is not None:
+                        verified = verify_language(text, langs_tag, detector_object)
 
-                    if verified:
-                        normalized_text = normalize_text(text)
-                        computed_hash = compute_hash(normalized_text)
+                        if verified:
+                            normalized_text = normalize_text(text)
+                            computed_hash = compute_hash(normalized_text)
 
-                        if computed_hash in seen_hashes:
-                            continue
-                        else:
-                            seen_hashes.add(computed_hash)
+                            if computed_hash in seen_hashes:
+                                continue
+                            else:
+                                seen_hashes.add(computed_hash)
 
-                        is_passed = passes_length_filter(normalized_text, min_words)
+                            is_passed = passes_length_filter(normalized_text, min_words)
 
-                        if is_passed:
-                            processed_posts.append({"text": normalized_text, "langs": langs_tag})
-                else:
-                    continue
+                            if is_passed:
+                                processed_posts.append({"text": normalized_text, "langs": langs_tag})
+                    else:
+                        continue
 
     df = pd.DataFrame(processed_posts)
     df.to_parquet(output_path)
 
     return True
-
-
-if __name__ == "__main__":
-    print(compute_hash("hello world"))
-    print(compute_hash("hello world"))  # powinno dać ten sam hash co powyżej
-    print(compute_hash("Hello World"))  # inny hash (wielkość liter ma znaczenie w hashu, ale pamiętaj - normalizację robisz PRZED hashowaniem)

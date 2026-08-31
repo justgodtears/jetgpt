@@ -7,12 +7,7 @@ from pathlib import Path
 from typing import TextIO
 
 
-# Directiories
-seq_file: Path = Path(__file__).parent.parent.parent.parent / "data" / "state" / "last_seq.txt"
-raw_data_json: Path = Path(__file__).parent.parent.parent.parent / "data" / "raw" / f"data-{uuid.uuid4()}.json"
-
-
-def save_data_to_jsonl(opened_file: TextIO, data : dict) -> None:
+def save_data_to_jsonl(opened_file: TextIO, data: dict) -> None:
     """
     Saves data to opened file in JSON-L format.
     Args:
@@ -24,6 +19,7 @@ def save_data_to_jsonl(opened_file: TextIO, data : dict) -> None:
     """
     line = json.dumps(data)
     opened_file.write(line + "\n")
+
 
 def save_checkpoint(path: Path, seq: int) -> None:
     """
@@ -37,6 +33,7 @@ def save_checkpoint(path: Path, seq: int) -> None:
     """
     with open(path, "w") as f:
         f.write(str(seq))
+
 
 def load_checkpoint(path: Path) -> int | None:
     """
@@ -55,6 +52,7 @@ def load_checkpoint(path: Path) -> int | None:
         print("Checkpoint file loaded correctly")
         return int(content) if content else None
 
+
 def build_uri(cursor=None) -> str:
     """"""
     base = (
@@ -64,6 +62,7 @@ def build_uri(cursor=None) -> str:
     if cursor is not None:
         base += f"&cursor={cursor}"
     return base
+
 
 async def listen(opened_file: TextIO, checkpoint: Path) -> None:
     """"""
@@ -89,7 +88,7 @@ async def listen(opened_file: TextIO, checkpoint: Path) -> None:
 
                             count += 1
                             if count % 44000 == 0:
-                                save_checkpoint(seq_file, last_seq)
+                                save_checkpoint(checkpoint, last_seq)
 
                             if count % 5000 == 0:
                                 time_elapsed = datetime.datetime.now() - last_heartbeat_time
@@ -105,7 +104,7 @@ async def listen(opened_file: TextIO, checkpoint: Path) -> None:
     finally:
 
         if last_seq is not None:
-            save_checkpoint(seq_file, last_seq)
+            save_checkpoint(checkpoint, last_seq)
 
         print("Data stream closed")
         print(f"New rows: {count}")
@@ -114,10 +113,7 @@ async def listen(opened_file: TextIO, checkpoint: Path) -> None:
         print(f"Average throughput: {count / total_time_elapsed}")
 
 
-async def main() -> None:
+async def main(raw_data_path: Path, checkpoint: Path) -> None:
     print("Starting ingestion...")
-    with open(str(raw_data_json), "a") as opened_file:
-        await listen(opened_file, seq_file)
-
-
-asyncio.run(main())
+    with open(str(raw_data_path), "a") as opened_file:
+        await listen(opened_file, checkpoint)

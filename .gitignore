@@ -1,7 +1,9 @@
 # Data
+data/test/
 data/raw/
 data/processed/
 data/tokenized/
+data/archive/
 *.jsonl
 *.parquet
 
