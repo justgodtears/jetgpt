@@ -25,7 +25,7 @@ def verify_language(text: str, langs_tag: list, detector_object) -> bool:
 def normalize_text(text: str) -> str:
     """"""
     # Changing all Urls to [URL]
-    text = re.sub(r"https?://\S+", "[URL]", text)
+    text = re.sub(r"(https?://\S+|www\.\S+)", "[URL]", text)
 
     # Changing all mentions in post to "[MENTION]"
     text = re.sub(r"@\S+", "[MENTION]", text)
@@ -52,7 +52,7 @@ def process_posts(raw_data_dir: Path, output_path: Path, detector_object, min_wo
     ### to see live progress of processing
     total_lines = 0
     for file in raw_data_dir.iterdir():
-        with open(file) as f:
+        with open(file, encoding="utf-8") as f:
             total_lines += sum(1 for _ in f)
 
     ### Main part of function
@@ -61,32 +61,40 @@ def process_posts(raw_data_dir: Path, output_path: Path, detector_object, min_wo
 
     with tqdm.tqdm(total=total_lines, desc="Processing posts") as pbar:
         for file in raw_data_dir.iterdir():
-            with open(file) as f:
+            with open(file, encoding="utf-8") as f:
                 for row in f:
-                    data = json.loads(row)
                     pbar.update(1)
-                    text = data["record"]["text"]
-                    langs_tag = data["record"]["langs"] if "langs" in data["record"] else None
+                    try:
+                        data = json.loads(row)
+                        text = data["record"]["text"] if "text" in data["record"] else ""
+                        langs_tag = data["record"]["langs"] if "langs" in data["record"] else None
 
-                    if langs_tag is not None:
-                        verified = verify_language(text, langs_tag, detector_object)
+                        if not isinstance(text, str):
+                            continue
 
-                        if verified:
-                            normalized_text = normalize_text(text)
-                            computed_hash = compute_hash(normalized_text)
+                        if not text.strip():
+                            continue
 
-                            if computed_hash in seen_hashes:
-                                continue
-                            else:
-                                seen_hashes.add(computed_hash)
+                        if langs_tag is not None:
+                            verified = verify_language(text, langs_tag, detector_object)
 
-                            is_passed = passes_length_filter(normalized_text, min_words)
+                            if verified:
+                                normalized_text = normalize_text(text)
+                                computed_hash = compute_hash(normalized_text)
 
-                            if is_passed:
-                                processed_posts.append({"text": normalized_text, "langs": langs_tag})
-                    else:
+                                if computed_hash in seen_hashes:
+                                    continue
+                                else:
+                                    seen_hashes.add(computed_hash)
+
+                                is_passed = passes_length_filter(normalized_text, min_words)
+
+                                if is_passed:
+                                    processed_posts.append({"text": normalized_text, "langs": langs_tag})
+                        else:
+                            continue
+                    except Exception:
                         continue
-
     df = pd.DataFrame(processed_posts)
     df.to_parquet(output_path)
 

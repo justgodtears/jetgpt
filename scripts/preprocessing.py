@@ -4,7 +4,7 @@ from pathlib import Path
 
 process_posts(
     raw_data_dir=Path("../data/raw"),
-    output_path=Path("../data/processed/processed_data__17-00__08_31_2026.parquet"),
+    output_path=Path("../data/processed/processed_data__09-00__09_06_2026.parquet"),
     detector_object=detector,
     min_words=3
 )

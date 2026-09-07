@@ -95,6 +95,7 @@ async def listen(opened_file: TextIO, checkpoint: Path) -> None:
                                 new_records = count - count_on_last_heartbeat
                                 throughput = new_records / time_elapsed.total_seconds()
                                 print(f"New records: {new_records} throughput: {throughput}")
+                                print(f"Total records: {count}")
                                 count_on_last_heartbeat = count
                                 last_heartbeat_time = datetime.datetime.now()
 
