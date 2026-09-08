@@ -99,3 +99,18 @@ def process_posts(raw_data_dir: Path, output_path: Path, detector_object, min_wo
     df.to_parquet(output_path)
 
     return True
+
+
+def merge_processed_parquets(parquet_paths: list[Path], output_path: Path) -> None:
+    """"""
+    parquets = [pd.read_parquet(file) for file in parquet_paths]
+
+    df = pd.concat(parquets, ignore_index=True)
+    print(f"Total rows before final dedup: {df.count()}")
+    filter_df = df[~df["text"].str.contains(r"www\.\S+")]
+    filter_df["hash"] = filter_df["text"].apply(compute_hash)
+    deduplicated_df = filter_df.drop_duplicates(subset="hash", keep="first")
+    deduplicated_df.drop(columns=["hash"], inplace=True)
+    print(f"Total rows after final dedup: {deduplicated_df.count()}")
+
+    deduplicated_df.to_parquet(output_path)

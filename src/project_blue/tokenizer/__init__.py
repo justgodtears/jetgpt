@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+import tqdm
 from pathlib import Path
 from tokenizers import Tokenizer, models, pre_tokenizers, trainers
 
@@ -20,3 +22,23 @@ def train_tokenizer(corpus_path: Path, vocab_size: int, output_path: Path) -> No
     tokenizer.train(files=[str(corpus_path)], trainer=trainer)
     tokenizer.save(str(output_path))
 
+
+def encode_corpus(parquet_path: Path, tokenizer_path: Path, output_path: Path) -> None:
+    """"""
+    tokenizer = Tokenizer.from_file(str(tokenizer_path))
+    eos_token_id = tokenizer.token_to_id("[EOS]")
+
+    df = pd.read_parquet(parquet_path)
+
+    all_tokens = []
+    total_lines = len(df)
+
+    with tqdm.tqdm(total=total_lines, desc="Processing posts") as pbar:
+        for text in df["text"].values:
+            encoded_text = tokenizer.encode(text).ids
+            all_tokens.extend(encoded_text)
+            all_tokens.append(eos_token_id)
+            pbar.update(1)
+
+    array = np.array(all_tokens, dtype=np.uint16)
+    np.save(str(output_path), array)
