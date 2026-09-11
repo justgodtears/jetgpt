@@ -7,7 +7,9 @@ dependencies = [
     "lingua-language-detector>=2.2.0",
     "pandas>=3.0.5",
     "pyarrow>=25.0.1",
+    "pyrefly>=0.60.0",
     "tokenizers>=0.23.1",
+    "torch>=2.14.0",
     "tqdm>=4.70.0",
     "websockets>=17.0.1",
 ]
