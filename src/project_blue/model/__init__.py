@@ -37,3 +37,17 @@ class SelfAttention(nn.Module):
 class MultiHeadAttention(nn.Module):
     def __init__(self, embed_dim: int, num_heads: int):
         super().__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.head_dim = embed_dim // num_heads
+
+        self.Q = nn.Linear(embed_dim, embed_dim)
+        self.K = nn.Linear(embed_dim, embed_dim)
+        self.V = nn.Linear(embed_dim, embed_dim)
+
+        self.output_layer = nn.Linear(embed_dim, embed_dim)
+
+    def forward(self, x):
+        Q = self.Q(x)
+        K = self.K(x)
+        V = self.V(x)
