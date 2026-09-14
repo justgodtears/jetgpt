@@ -48,6 +48,27 @@ class MultiHeadAttention(nn.Module):
         self.output_layer = nn.Linear(embed_dim, embed_dim)
 
     def forward(self, x):
+        batch_size, seq_len = x.shape[:2]
+
         Q = self.Q(x)
         K = self.K(x)
         V = self.V(x)
+
+        Q_heads = Q.view(batch_size, seq_len, self.num_heads, self.head_dim)
+        K_heads = K.view(batch_size, seq_len, self.num_heads, self.head_dim)
+        V_heads = V.view(batch_size, seq_len, self.num_heads, self.head_dim)
+
+        Q_transposed = Q_heads.transpose(1, 2)
+        K_transposed = K_heads.transpose(1, 2)
+        V_transposed = V_heads.transpose(1, 2)
+
+        attention_scores = torch.matmul(Q_transposed, K_transposed.transpose(-2, -1))
+        scaled = attention_scores / (self.head_dim ** 0.5)
+        softmax_weights = torch.softmax(scaled, dim=-1)
+        weighted_sum = torch.matmul(softmax_weights, V_transposed)
+
+        heads_concat = weighted_sum.transpose(1, 2).reshape(batch_size, seq_len, self.embed_dim)
+
+        result = self.output_layer(heads_concat)
+
+        return result
