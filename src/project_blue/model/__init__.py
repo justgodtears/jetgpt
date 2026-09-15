@@ -13,6 +13,7 @@ class TokenAndPositionEmbedding(nn.Module):
         position_embeddings = self.position_embedding(position_tensor)
         return token_embeddings + position_embeddings
 
+
 # It was only used to help me learn the Single-Head architecture
 # all new GPTs use Multi-Head, so this class is not used
 class SelfAttention(nn.Module):
@@ -63,6 +64,10 @@ class MultiHeadAttention(nn.Module):
         V_transposed = V_heads.transpose(1, 2)
 
         attention_scores = torch.matmul(Q_transposed, K_transposed.transpose(-2, -1))
+
+        mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1).bool()
+        attention_scores = attention_scores.masked_fill(mask, float('-inf'))
+
         scaled = attention_scores / (self.head_dim ** 0.5)
         softmax_weights = torch.softmax(scaled, dim=-1)
         weighted_sum = torch.matmul(softmax_weights, V_transposed)
@@ -72,3 +77,17 @@ class MultiHeadAttention(nn.Module):
         result = self.output_layer(heads_concat)
 
         return result
+
+
+class FeedForward(nn.Module):
+    def __init__(self, embed_dim: int, hidden_dim: int):
+        super().__init__()
+        self.first_layer = nn.Linear(embed_dim, hidden_dim)
+        self.second_layer = nn.Linear(hidden_dim, embed_dim)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        first_result = self.first_layer(x)
+        activation = self.relu(first_result)
+        second_result = self.second_layer(activation)
+        return second_result
