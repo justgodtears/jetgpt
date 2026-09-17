@@ -91,3 +91,32 @@ class FeedForward(nn.Module):
         activation = self.relu(first_result)
         second_result = self.second_layer(activation)
         return second_result
+
+
+class TransformerBlock(nn.Module):
+    def __init__(self, embed_dim: int, num_heads: int, hidden_dim: int):
+        super().__init__()
+        self.attention = MultiHeadAttention(embed_dim, num_heads)
+        self.feed_forward = FeedForward(embed_dim, hidden_dim)
+        self.norm1 = nn.LayerNorm(embed_dim)
+        self.norm2 = nn.LayerNorm(embed_dim)
+
+    def forward(self, x):
+        x = x + self.attention(self.norm1(x))
+        x = x + self.feed_forward(self.norm2(x))
+        return x
+
+class JetGPT(nn.Module):
+    def __init__(self, vocab_size: int, seq_len: int, embed_dim: int, num_heads: int, hidden_dim: int, num_layers: int):
+        super().__init__()
+        self.embedding = TokenAndPositionEmbedding(vocab_size, seq_len, embed_dim)
+        self.blocks = nn.ModuleList([TransformerBlock(embed_dim, num_heads, hidden_dim) for _ in range(num_layers)])
+        self.output_layer = nn.Linear(embed_dim, vocab_size)
+
+    def forward(self, token_ids):
+        tokens_result = self.embedding(token_ids)
+        for block in self.blocks:
+            tokens_result = block(tokens_result)
+        score = self.output_layer(tokens_result)
+        return score
+
