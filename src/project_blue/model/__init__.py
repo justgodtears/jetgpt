@@ -106,6 +106,7 @@ class TransformerBlock(nn.Module):
         x = x + self.feed_forward(self.norm2(x))
         return x
 
+
 class JetGPT(nn.Module):
     def __init__(self, vocab_size: int, seq_len: int, embed_dim: int, num_heads: int, hidden_dim: int, num_layers: int):
         super().__init__()
@@ -120,3 +121,6 @@ class JetGPT(nn.Module):
         score = self.output_layer(tokens_result)
         return score
 
+def count_parameters(model) -> int:
+    params = sum(p.numel() for p in model.parameters())
+    return params
